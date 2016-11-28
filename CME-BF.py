@@ -5,8 +5,7 @@
 #                                                                      #
 ########################################################################
 
-import os
-import subprocess
+import os, subprocess, sys, argparse
 
 
 def banner():
@@ -26,9 +25,9 @@ def banner():
     print(" #   Using https://github.com/byt3bl33d3r/CrackMapExec by byt3bl33d3r   #")
     print(" #                                                                      #")
     print(" ########################################################################")
-    grab_version = "1.0"
+    version = "0.1"
     strversion = """        		  """ + bcolors.BLUE + \
-        """You are using Version: %s""" % (grab_version) + bcolors.ENDC + "\n"
+        """You are using Version: %s""" % (version) + bcolors.ENDC + "\n"
     print(strversion)
 
 
@@ -86,7 +85,10 @@ def print_error(message):
     print((bcolors.RED) + (bcolors.BOLD) + \
         ("[!] ") + (bcolors.ENDC) + (bcolors.RED) + \
         (str(message)) + (bcolors.ENDC))
-
+def print_error_indent(message):
+    print((bcolors.RED) + (bcolors.BOLD) + \
+        ("  [!] ") + (bcolors.ENDC) + (bcolors.RED) + \
+        (str(message)) + (bcolors.ENDC))
 #end apperenace
 
 
@@ -95,7 +97,7 @@ def dependencycheck():
 
     print_info("Checking dependencies...")
     crackmapexec_inst = os.path.exists("/usr/local/bin/crackmapexec")
-
+    """
     if crackmapexec_inst:
         print_status_indent("CrackMapExec is installed")
         print_info_indent("Moving on...")
@@ -105,9 +107,42 @@ def dependencycheck():
         cmd_install = "sudo pip install crackmapexec"
         subprocess.Popen(cmd_install, stdout=subprocess.PIPE, shell=True)
         dependencycheck()
+    """
+    if not os.path.exists(userfile):
+        print_error_indent("File " + userfile + " does not exist")
+        sys.exit(2)
+
+    if not os.path.exists(passwordfile):
+        print_error_indent("File " + passwordfile + " does not exist")
+        sys.exit(2)
+
+
     return
 
 def main():
+    global version
+    global threads
+    global userfile
+    global passwordfile
+    threads = 3
+
+
+    parser = argparse.ArgumentParser()
+    # optional argument
+    parser.add_argument("-t", "--threads", type=int, help="set thread count, Default = 3")
+    # required arguments
+    required = parser.add_argument_group('required arguments')
+    required.add_argument("-u", "--userfile", help="Path to userlist file", required=True)
+    required.add_argument("-p", "--passwordfile", help="Path to passwordlist file", required=True)
+    args = parser.parse_args()
+
+    if args.threads is not None:
+        threads = args.threads
+
+    userfile = args.userfile
+    passwordfile = args.passwordfile
+
+
     cls()
     banner()
     dependencycheck()
