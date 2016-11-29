@@ -97,7 +97,7 @@ def dependencycheck():
 
     print_info("Checking dependencies...")
     crackmapexec_inst = os.path.exists("/usr/local/bin/crackmapexec")
-    """
+
     if crackmapexec_inst:
         print_status_indent("CrackMapExec is installed")
         print_info_indent("Moving on...")
@@ -107,13 +107,15 @@ def dependencycheck():
         cmd_install = "sudo pip install crackmapexec"
         subprocess.Popen(cmd_install, stdout=subprocess.PIPE, shell=True)
         dependencycheck()
-    """
+
+    print()
+
     if not os.path.exists(userfile):
-        print_error_indent("File " + userfile + " does not exist")
+        print_error("File '" + userfile + "' does not exist")
         sys.exit(2)
 
     if not os.path.exists(passwordfile):
-        print_error_indent("File " + passwordfile + " does not exist")
+        print_error("File '" + passwordfile + "' does not exist")
         sys.exit(2)
 
 
