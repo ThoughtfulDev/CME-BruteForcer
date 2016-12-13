@@ -41,6 +41,11 @@ def main():
     global rightPW
     segmentCnt = 3
 
+
+    if os.getuid() != 0:
+        print_error("You need to have root privileges to run this program!")
+        quit()
+
     if os.path.exists('got'):
         os.remove('got')
 
@@ -198,7 +203,6 @@ def checkCreds(threadid, username, password, ip):
     with p.stdout:
         for line in iter(p.stdout.readline, b''):
             if "Pwn3d!" in line:
-
                 cls()
                 banner()
                 print_thread(threadid, "Password found! (" + username + "|" + password + ")", True)
