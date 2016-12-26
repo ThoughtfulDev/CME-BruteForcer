@@ -41,6 +41,9 @@ def main():
     global rightPW
     segmentCnt = 3
 
+    if not sys.platform.startswith('linux'):
+        print_error("Do you even Linux bro?!")
+        quit()
 
     if os.getuid() != 0:
         print_error("You need to have root privileges to run this program!")
