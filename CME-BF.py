@@ -204,13 +204,21 @@ def checkCreds(threadid, username, password, ip):
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
 
     with p.stdout:
+	error = False
         for line in iter(p.stdout.readline, b''):
-            if "Pwn3d!" in line:
-                cls()
-                banner()
-                print_thread(threadid, "Password found! (" + username + "|" + password + ")", True)
-                print("\n")
-                return True
+            if "FAILURE" in line:
+                #cls()
+                #banner()
+                #print_thread(threadid, "Password found! (" + username + "|" + password + ")", True)
+                #print("\n")
+		error = True
+                #return True
+	if error == False:
+		cls()
+		banner()
+		print_thread(threadid, "Password found! (" + username + "|" + password + ")", True)
+		print("\n")
+	return not error
 
     p.wait()  # wait for the subprocess to exit
     return False
