@@ -164,10 +164,7 @@ def dependencycheck():
         print_info_indent("Moving on...")
     else:
         print_warning("CrackMapExec could not be found in /usr/local/bin/crackmapexec")
-        print_info_indent("Installing it now...")
-        cmd_install = "sudo pip install crackmapexec"
-        subprocess.Popen(cmd_install, stdout=subprocess.PIPE, shell=True)
-        dependencycheck()
+        sys.exit(2)
 
     print('\n')
 
