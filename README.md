@@ -9,7 +9,7 @@ It basically bruteforce the Username/Password by running CME multiple times.
 You just provide a username and password list and a ip... then you are good to go :)
 Just run
 
-`pip install crackmapexec`
+`pip install -r requirements.txt`
 
 Next you need to find you targets ip by using 
 
